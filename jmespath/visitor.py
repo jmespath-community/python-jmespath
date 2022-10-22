@@ -216,6 +216,12 @@ class TreeInterpreter(Visitor):
         return result
 
     def visit_slice(self, node, value):
+        if isinstance(value, string_type):
+            start = node['children'][0]
+            end = node['children'][1]
+            step = node['children'][2]
+            return value[start:end:step]
+
         if not isinstance(value, list):
             return None
         s = slice(*node['children'])
