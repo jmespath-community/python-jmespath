@@ -1,3 +1,15 @@
+1.1.0
+=====
+
+* JEP-11 Lexical Scoping
+* JEP-13 Object Manipulation functions
+* JEP-14 String functions
+* JEP-16 Arithmetic Expressions
+* JEP-17 Root Reference
+* JEP-18 Grouping
+* JEP-19 Evaluation of Pipe Expressions
+  (`discussion #113 <https://github.com/jmespath-community/jmespath.spec/discussions/113>`__)
+
 1.0.1
 =====
 
