@@ -18,6 +18,10 @@ def current_node():
     return {'type': 'current', 'children': []}
 
 
+def root_node():
+    return {'type': 'root', 'children': []}
+
+
 def expref(expression):
     return {'type': 'expref', 'children': [expression]}
 
