@@ -1,5 +1,5 @@
-JMESPath
-========
+JMESPath Community
+==================
 
 
 .. image:: https://badges.gitter.im/Join Chat.svg
@@ -8,6 +8,9 @@ JMESPath
 
 JMESPath (pronounced "james path") allows you to declaratively specify how to
 extract elements from a JSON document.
+
+JMESPath Community is an unofficial community effort to promote improvements
+and updates to the JMESPath language specification.
 
 For example, given this document::
 
@@ -42,11 +45,11 @@ The expression: ``foo.*.name`` will return ["one", "two"].
 Installation
 ============
 
-You can install JMESPath from pypi with:
+You can install JMESPath Community from PyPI with:
 
 .. code:: bash
 
-    pip install jmespath
+    pip install jmespath-community
 
 
 API
@@ -106,7 +109,7 @@ Custom Functions
 
 The JMESPath language has numerous
 `built-in functions
-<http://jmespath.org/specification.html#built-in-functions>`__, but it is
+<https://jmespath.site/main/#functions>`__, but it is
 also possible to add your own custom functions.  Keep in mind that
 custom function support in jmespath.py is experimental and the API may
 change based on feedback.
@@ -114,7 +117,7 @@ change based on feedback.
 **If you have a custom function that you've found useful, consider submitting
 it to jmespath.site and propose that it be added to the JMESPath language.**
 You can submit proposals
-`here <https://github.com/jmespath/jmespath.site/issues>`__.
+`here <https://github.com/jmespath-community/jmespath.spec/issues>`__.
 
 To create custom functions:
 
@@ -177,24 +180,24 @@ Below are a few examples:
 Again, if you come up with useful functions that you think make
 sense in the JMESPath language (and make sense to implement in all
 JMESPath libraries, not just python), please let us know at
-`jmespath.site <https://github.com/jmespath/jmespath.site/issues>`__.
+`jmespath.site <https://github.com/jmespath-community/jmespath.spec/discussions>`__.
 
 
 Specification
 =============
 
 If you'd like to learn more about the JMESPath language, you can check out
-the `JMESPath tutorial <http://jmespath.org/tutorial.html>`__.  Also check
-out the `JMESPath examples page <http://jmespath.org/examples.html>`__ for
+the `JMESPath tutorial <https://jmespath.site/main/#tutorial>`__.  Also check
+out the `JMESPath examples page <https://jmespath.site/main/#examples>`__ for
 examples of more complex jmespath queries.
 
 The grammar is specified using ABNF, as described in
 `RFC4234 <http://www.ietf.org/rfc/rfc4234.txt>`_.
 You can find the most up to date
-`grammar for JMESPath here <http://jmespath.org/specification.html#grammar>`__.
+`grammar for JMESPath here <https://jmespath.site/main/#spec-grammar>`__.
 
 You can read the full
-`JMESPath specification here <http://jmespath.org/specification.html>`__.
+`JMESPath specification here <https://jmespath.site/main/#specification>`__.
 
 
 Testing
