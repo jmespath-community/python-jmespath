@@ -4,6 +4,9 @@ import inspect
 from pydoc import resolve
 
 from jmespath import exceptions
+from jmespath.compat import get_methods
+from jmespath.compat import iteritems
+from jmespath.compat import map
 from jmespath.compat import string_type as STRING_TYPE
 from jmespath.compat import get_methods
 
@@ -290,6 +293,14 @@ class Functions(metaclass=FunctionRegistry):
     def _func_sum(self, arg):
         return sum(arg)
 
+    @signature({'types': ['object']})
+    def _func_items(self, arg):
+        return list(map(list, iteritems(arg)))
+
+    @signature({'types': ['array']})
+    def _func_from_items(self, items):
+        return dict(items)
+
     @signature({"types": ['object']})
     def _func_keys(self, arg):
         # To be consistent with .values()
@@ -360,6 +371,10 @@ class Functions(metaclass=FunctionRegistry):
         if 'scopes' in kwargs:
             kwargs.get('scopes').pushScope(scope)
         return expref.visit(expref.expression, expref.context, *args, **kwargs)
+
+    @signature({'types': ['array'], 'variadic': True})
+    def _func_zip(self, *arguments):
+        return list(map(list, zip(*arguments)))
 
     def _create_key_func(self, expref, allowed_types, function_name):
         def keyfunc(x):
