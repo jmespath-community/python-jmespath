@@ -4,6 +4,7 @@
 * JEP-11 Lexical Scoping
 * JEP-13 Object Manipulation functions
 * JEP-14 String functions
+* JEP-15 String Slices
 * JEP-16 Arithmetic Expressions
 * JEP-17 Root Reference
 * JEP-18 Grouping
