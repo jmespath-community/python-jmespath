@@ -93,22 +93,28 @@ class Functions(metaclass=FunctionRegistry):
         return function(self, *resolved_args)
 
     def _validate_arguments(self, args, signature, function_name):
-        if signature and signature[-1].get('variadic'):
+        required_arguments_count = len([param for param in signature if not param.get('optional') or not param['optional']])
+        optional_arguments_count = len([param for param in signature if param.get('optional') and param['optional']])
+        has_variadic = signature[-1].get('variadic') if signature != None else False
+        if has_variadic:
             if len(args) < len(signature):
                 raise exceptions.VariadictArityError(
                     len(signature), len(args), function_name)
-        elif len(args) != len(signature):
+        elif optional_arguments_count > 0:
+            if len(args) < required_arguments_count or len(args) > (required_arguments_count + optional_arguments_count):
+                raise exceptions.ArityError(
+                    len(signature), len(args), function_name)
+        elif len(args) != required_arguments_count:
             raise exceptions.ArityError(
                 len(signature), len(args), function_name)
         return self._type_check(args, signature, function_name)
 
     def _type_check(self, actual, signature, function_name):
-        for i in range(len(signature)):
-            allowed_types = signature[i]['types']
+        for i in range(min(len(signature), len(actual))):
+            allowed_types = self._get_allowed_types_from_signature(signature[i])
             if allowed_types:
                 self._type_check_single(actual[i], allowed_types,
                                         function_name)
-
     def _type_check_single(self, current, types, function_name):
         # Type checking involves checking the top level type,
         # and in the case of arrays, potentially checking the types
@@ -131,6 +137,13 @@ class Functions(metaclass=FunctionRegistry):
         if allowed_subtypes:
             self._subtype_check(current, allowed_subtypes,
                                 types, function_name)
+
+    ## signature supports monotype {'type': 'type-name'}
+    ## or multiple types {'types': ['type1-name', 'type2-name']}
+    def _get_allowed_types_from_signature(self, spec):
+        if spec.get('type'):
+            spec.update({'types': [spec.get('type')]})
+        return spec.get('types')
 
     def _get_allowed_pytypes(self, types):
         allowed_types = []
@@ -176,6 +189,14 @@ class Functions(metaclass=FunctionRegistry):
     @signature({'types': ['number']})
     def _func_abs(self, arg):
         return abs(arg)
+    
+    @signature({'types': ['string']})
+    def _func_lower(self, arg):
+        return arg.lower()
+    
+    @signature({'types': ['string']})
+    def _func_upper(self, arg):
+        return arg.upper()
 
     @signature({'types': ['array-number']})
     def _func_avg(self, arg):
@@ -306,6 +327,166 @@ class Functions(metaclass=FunctionRegistry):
         # To be consistent with .values()
         # should we also return the indices of a list?
         return list(arg.keys())
+
+    @signature(
+        {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'number', 'optional': True},
+        {'type': 'number', 'optional': True})
+    def _func_find_first(self, text, search, start = 0, end = None):
+        self._ensure_integer('find_first', start, start)
+        self._ensure_integer('find_first', end, end)
+        return self._find_impl(
+            text,
+            search,
+            lambda t, s: t.find(s),
+            start, 
+            end
+        )
+
+    @signature(
+        {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'number', 'optional': True},
+        {'type': 'number', 'optional': True})
+    def _func_find_last(self, text, search, start = 0, end = None):
+        self._ensure_integer('find_last', start, start)
+        self._ensure_integer('find_last', end, end)
+        return self._find_impl(
+            text,
+            search,
+            lambda t, s: t.rfind(s),
+            start, 
+            end
+        )
+
+    def _find_impl(self, text, search, func, start, end):
+        if len(search) == 0:
+            return None
+        if end == None:
+            end = len(text)
+
+        pos = func(text[start:end], search)
+        if start < 0:
+            start = start + len(text)
+
+        # restrict resulting range to valid indices
+        start = min(max(start, 0), len(text))
+        return start + pos if pos != -1 else None
+
+    @signature(
+        {'type': 'string'},
+        {'type': 'number'},
+        {'type': 'string', 'optional': True})
+    def _func_pad_left(self, text, width, padding = ' '):
+        self._ensure_non_negative_integer('pad_left', 'width', width)
+        return self._pad_impl(lambda : text.rjust(width, padding), padding)
+
+    @signature(
+        {'type': 'string'},
+        {'type': 'number'},
+        {'type': 'string', 'optional': True})
+    def _func_pad_right(self, text, width, padding = ' '):
+        self._ensure_non_negative_integer('pad_left', 'width', width)
+        return self._pad_impl(lambda : text.ljust(width, padding), padding)
+
+    def _pad_impl(self, func, padding):
+        if len(padding) != 1:
+            raise exceptions.JMESPathError(
+                'syntax-error: pad_right() expects $padding to have a '
+                'single character, but received `{}` instead.'
+                .format(padding))
+        return func()
+
+    @signature(
+        {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'number', 'optional': True})
+    def _func_replace(self, text, search, replacement, count = None):
+        self._ensure_non_negative_integer(
+            'replace',
+            'count',
+            count)
+
+        if count != None:
+            return text.replace(search, replacement, int(count))
+        return text.replace(search, replacement)
+
+    @signature(
+        {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'number', 'optional': True})
+    def _func_split(self, text, search, count = None):
+        self._ensure_non_negative_integer(
+            'split',
+            'count',
+            count)
+
+        if len(search) == 0:
+            chars = list(text)
+            if count == None:
+                return chars
+
+            head = [c for c in chars[:count]]
+            tail =  [''.join(chars[count:])]
+            return head + tail
+
+        if count != None:
+            return text.split(search, count)
+        return text.split(search)
+    
+    def _ensure_integer(
+        self,
+        func_name,
+        param_name,
+        param_value):
+
+        if param_value != None: 
+            if int(param_value) != param_value:
+                raise exceptions.JMESPathError(
+                    'invalid-type: {}() expects ${} to be a '
+                    'integer, but received {} instead.'
+                    .format(
+                        func_name,
+                        param_name,
+                        param_value
+                    ))
+
+    def _ensure_non_negative_integer(
+        self,
+        func_name,
+        param_name,
+        param_value):
+
+        if param_value != None: 
+            if int(param_value) != param_value or int(param_value) < 0:
+                raise exceptions.JMESPathError(
+                    'invalid-type: {}() expects ${} to be a '
+                    'non-negative integer, but received {} instead.'
+                    .format(
+                        func_name,
+                        param_name,
+                        param_value
+                    ))
+
+    @signature({'type': 'string'}, {'type': 'string', 'optional': True})
+    def _func_trim(self, text, chars = None):
+        if chars == None or len(chars) == 0:
+            return text.strip()
+        return text.strip(chars)
+
+    @signature({'type': 'string'}, {'type': 'string', 'optional': True})
+    def _func_trim_left(self, text, chars = None):
+        if chars == None or len(chars) == 0:
+            return text.lstrip()
+        return text.lstrip(chars)
+
+    @signature({'type': 'string'}, {'type': 'string', 'optional': True})
+    def _func_trim_right(self, text, chars = None):
+        if chars == None or len(chars) == 0:
+            return text.rstrip()
+        return text.rstrip(chars)
 
     @signature({"types": ['object']})
     def _func_values(self, arg):
