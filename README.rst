@@ -104,6 +104,41 @@ of your dict keys.  To do this you can use either of these options:
     ...               jmespath.Options(dict_cls=collections.OrderedDict))
 
 
+JMESPath used to support a special case `json-value` syntax to represent a
+JSON string literal, but this was being deprecated following
+`JEP-12
+<https://github.com/jmespath-community/jmespath.spec/blob/main/jep-012-raw-string-literals.md>`__
+and its `raw-string` literal syntax.
+
+.. code:: python
+
+    >>> import jmespath
+    >>> jmespath.search("`foo`"', {})
+    jmespath.exceptions.LexerError: Bad jmespath expression: Bad token %s `foo`:
+    `foo`
+    ^
+
+While JMESPath Community now fully deprecates this legacy syntax of providing
+a JSON literal string with elided double quotes, you can still opt-in to parse
+legacy syntax, by specifying the ``enable_legacy_literals`` flag to the
+``Options`` object.
+
+.. code:: python
+
+    >>> import jmespath
+    >>> jmespath.search("`foo`"',
+    ...                 mydata,
+    ...                 jmespath.Options(enable_legacy_literals=True))
+    'foo'
+
+
+    >>> import jmespath
+    >>> parsed = jmespath.compile("`foo`",
+    ...               jmespath.Options(enable_legacy_literals=True))
+    >>> parsed.search(mydata)
+    'foo'
+
+
 Custom Functions
 ~~~~~~~~~~~~~~~~
 
