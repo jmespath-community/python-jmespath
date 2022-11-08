@@ -13,6 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -25,4 +27,5 @@ jobs:
         pip install dist/*.whl
     - name: Test with pytest
       run: |
+        ./scripts/sync-tests
         cd tests/ && py.test --cov jmespath --cov-report term-missing
