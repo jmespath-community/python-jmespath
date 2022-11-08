@@ -567,3 +567,6 @@ class ParsedResult(object):
         renderer = visitor.GraphvizVisitor()
         contents = renderer.visit(self.parsed)
         return contents
+
+    def __repr__(self):
+        return repr(self.parsed)
