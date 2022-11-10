@@ -12,7 +12,8 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 COMPLIANCE_DIR = os.path.join(TEST_DIR, 'compliance')
 LEGACY_DIR = os.path.join(TEST_DIR, 'legacy')
 NOT_SPECIFIED = object()
-OPTIONS = Options(dict_cls=OrderedDict)
+COMPLIANCE_OPTIONS = Options(dict_cls=OrderedDict)
+LEGACY_OPTIONS = Options(dict_cls=OrderedDict, enable_legacy_literals=True)
 
 
 def _compliance_tests(requested_test_type):
@@ -69,16 +70,22 @@ def load_cases(full_path):
 )
 def test_expression(given, expression, expected, filename):
     import jmespath.parser
+
+    options = COMPLIANCE_OPTIONS \
+        if filename.find('legacy_') == -1 \
+        else LEGACY_OPTIONS
+
     try:
-        parsed = jmespath.compile(expression)
+        parsed = jmespath.compile(expression, options)
     except ValueError as e:
         raise AssertionError(
             'jmespath expression failed to compile: "%s", error: %s"' %
             (expression, e))
-    actual = parsed.search(given, options=OPTIONS)
+
+    actual = parsed.search(given, options=options)
     expected_repr = json.dumps(expected, indent=4)
     actual_repr = json.dumps(actual, indent=4)
-    error_msg = ("\n\n  (%s) The expression '%s' was suppose to give:\n%s\n"
+    error_msg = ("\n\n  (%s) The expression '%s' was supposed to give:\n%s\n"
                  "Instead it matched:\n%s\nparsed as:\n%s\ngiven:\n%s" % (
                      filename, expression, expected_repr,
                      actual_repr, pformat(parsed.parsed),

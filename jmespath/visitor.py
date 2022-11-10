@@ -59,7 +59,10 @@ def _is_actual_number(x):
 
 class Options(object):
     """Options to control how a JMESPath function is evaluated."""
-    def __init__(self, dict_cls=None, custom_functions=None):
+    def __init__(self, dict_cls=None,
+        custom_functions=None,
+        enable_legacy_literals=False):
+
         #: The class to use when creating a dict.  The interpreter
         #  may create dictionaries during the evaluation of a JMESPath
         #  expression.  For example, a multi-select hash will
@@ -70,6 +73,12 @@ class Options(object):
         #  have predictable key ordering.
         self.dict_cls = dict_cls
         self.custom_functions = custom_functions
+
+        #: The flag to enable pre-JEP-12 literal compatibility.
+        #  JEP-12 deprecates `foo` -> "foo" syntax.
+        #  Valid expressions MUST use: `"foo"` -> "foo"
+        #  Setting this flag to `True` enables support for legacy syntax.
+        self.enable_legacy_literals = enable_legacy_literals
 
 
 class _Expression(object):

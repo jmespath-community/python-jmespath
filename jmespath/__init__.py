@@ -4,9 +4,9 @@ from jmespath.visitor import Options
 __version__ = '1.0.1'
 
 
-def compile(expression):
-    return parser.Parser().parse(expression)
+def compile(expression, options=None):
+    return parser.Parser().parse(expression, options=options)
 
 
 def search(expression, data, options=None):
-    return parser.Parser().parse(expression).search(data, options=options)
+    return compile(expression, options).search(data, options=options)

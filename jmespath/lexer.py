@@ -2,6 +2,7 @@ import string
 import warnings
 from json import loads
 
+from jmespath.visitor import Options
 from jmespath.exceptions import LexerError, EmptyExpressionError
 
 
@@ -29,7 +30,14 @@ class Lexer(object):
         u'\u00f7': 'divide',
     }
 
-    def tokenize(self, expression):
+    def __init__(self):
+        self._enable_legacy_literals = False
+
+    def tokenize(self, expression, options=None):
+        if (options is not None):
+            self._enable_legacy_literals= \
+                options.enable_legacy_literals
+
         self._initialize_for_expression(expression)
         while self._current is not None:
             if self._current in self.SIMPLE_TOKENS:
@@ -184,11 +192,21 @@ class Lexer(object):
 
     def _consume_literal(self):
         start = self._position
-        lexeme = self._consume_until('`').replace('\\`', '`')
+        token = self._consume_until('`')
+        lexeme = token.replace('\\`', '`')
+        parsed_json = None
         try:
             # Assume it is valid JSON and attempt to parse.
             parsed_json = loads(lexeme)
         except ValueError:
+            error = LexerError(lexer_position=start,
+                        lexer_value=self._expression[start:],
+                        message="Bad token %s `{}`".format(token))
+
+            if not self._enable_legacy_literals:
+                raise error
+                return
+
             try:
                 # Invalid JSON values should be converted to quoted
                 # JSON strings during the JEP-12 deprecation period.
@@ -196,9 +214,8 @@ class Lexer(object):
                 warnings.warn("deprecated string literal syntax",
                               PendingDeprecationWarning)
             except ValueError:
-                raise LexerError(lexer_position=start,
-                                 lexer_value=self._expression[start:],
-                                 message="Bad token %s" % lexeme)
+                raise error
+
         token_len = self._position - start
         return {'type': 'literal', 'value': parsed_json,
                 'start': start, 'end': token_len}
