@@ -206,6 +206,9 @@ class TestRegexLexer(LexerUtils):
             ]
         )
 
+    def test_invalid_character_in_json_literal(self):
+        with self.assertRaises(LexerError) as e:
+            tokens = list(self.lexer.tokenize(u'`0\u2028`'))
 
 if __name__ == '__main__':
     unittest.main()
