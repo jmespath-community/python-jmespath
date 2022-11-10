@@ -3,11 +3,7 @@ from tests import unittest
 from jmespath import lexer
 from jmespath.exceptions import LexerError, EmptyExpressionError
 
-
-class TestRegexLexer(unittest.TestCase):
-
-    def setUp(self):
-        self.lexer = lexer.Lexer()
+class LexerUtils(unittest.TestCase):
 
     def assert_tokens(self, actual, expected):
         # The expected tokens only need to specify the
@@ -25,6 +21,11 @@ class TestRegexLexer(unittest.TestCase):
         self.assertEqual(stripped[-1]['type'], 'eof')
         stripped.pop()
         self.assertEqual(stripped, expected)
+
+class TestRegexLexer(LexerUtils):
+
+    def setUp(self):
+        self.lexer = lexer.Lexer()
 
     def test_empty_string(self):
         with self.assertRaises(EmptyExpressionError):
@@ -133,7 +134,7 @@ class TestRegexLexer(unittest.TestCase):
         ])
 
     def test_literal_string(self):
-        tokens = list(self.lexer.tokenize('`foobar`'))
+        tokens = list(self.lexer.tokenize('`"foobar"`'))
         self.assert_tokens(tokens, [
             {'type': 'literal', 'value': "foobar"},
         ])
@@ -143,14 +144,6 @@ class TestRegexLexer(unittest.TestCase):
         self.assert_tokens(tokens, [
             {'type': 'literal', 'value': 2},
         ])
-
-    def test_literal_with_invalid_json(self):
-        with self.assertRaises(LexerError):
-            list(self.lexer.tokenize('`foo"bar`'))
-
-    def test_literal_with_empty_string(self):
-        tokens = list(self.lexer.tokenize('``'))
-        self.assert_tokens(tokens, [{'type': 'literal', 'value': ''}])
 
     def test_position_information(self):
         tokens = list(self.lexer.tokenize('foo'))
@@ -173,17 +166,6 @@ class TestRegexLexer(unittest.TestCase):
               'start': 4, 'end': 7},
              {'type': 'eof', 'value': '',
               'start': 7, 'end': 7},
-             ]
-        )
-
-    def test_adds_quotes_when_invalid_json(self):
-        tokens = list(self.lexer.tokenize('`{{}`'))
-        self.assertEqual(
-            tokens,
-            [{'type': 'literal', 'value': '{{}',
-              'start': 0, 'end': 4},
-             {'type': 'eof', 'value': '',
-              'start': 5, 'end': 5}
              ]
         )
 

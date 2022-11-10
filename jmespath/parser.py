@@ -89,19 +89,19 @@ class Parser(object):
         self._buffer_size = lookahead
         self._index = 0
 
-    def parse(self, expression):
+    def parse(self, expression, options=None):
         cached = self._CACHE.get(expression)
         if cached is not None:
             return cached
-        parsed_result = self._do_parse(expression)
+        parsed_result = self._do_parse(expression, options)
         self._CACHE[expression] = parsed_result
         if len(self._CACHE) > self._MAX_SIZE:
             self._free_cache_entries()
         return parsed_result
 
-    def _do_parse(self, expression):
+    def _do_parse(self, expression, options=None):
         try:
-            return self._parse(expression)
+            return self._parse(expression, options)
         except exceptions.LexerError as e:
             e.expression = expression
             raise
@@ -112,8 +112,8 @@ class Parser(object):
             e.expression = expression
             raise
 
-    def _parse(self, expression):
-        self.tokenizer = lexer.Lexer().tokenize(expression)
+    def _parse(self, expression, options=None):
+        self.tokenizer = lexer.Lexer().tokenize(expression, options)
         self._tokens = list(self.tokenizer)
         self._index = 0
         parsed = self._expression(binding_power=0)
