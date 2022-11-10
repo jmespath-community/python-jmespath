@@ -212,7 +212,7 @@ class Lexer(object):
                 # JSON strings during the JEP-12 deprecation period.
                 parsed_json = loads('"%s"' % lexeme.lstrip())
                 warnings.warn("deprecated string literal syntax",
-                              PendingDeprecationWarning)
+                                DeprecationWarning)
             except ValueError:
                 raise error
 
