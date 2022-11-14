@@ -535,7 +535,8 @@ class Parser(object):
             lex_position, actual_value, actual_type, message)
 
     def _free_cache_entries(self):
-        for key in random.sample(list(self._CACHE.keys()), int(self._MAX_SIZE / 2)):
+        keys = list(self._CACHE.keys())
+        for key in random.sample(keys, min(len(keys), int(self._MAX_SIZE / 2))):
             self._CACHE.pop(key, None)
 
     @classmethod
