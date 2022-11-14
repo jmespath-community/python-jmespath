@@ -69,20 +69,13 @@ def load_cases(full_path):
     _compliance_tests('result')
 )
 def test_expression(given, expression, expected, filename):
-    import jmespath.parser
-
-    options = COMPLIANCE_OPTIONS \
-        if filename.find('legacy_') == -1 \
-        else LEGACY_OPTIONS
-
     try:
-        parsed = jmespath.compile(expression, options)
+        (actual, parsed) = _search_expression(given, expression, filename)
     except ValueError as e:
         raise AssertionError(
             'jmespath expression failed to compile: "%s", error: %s"' %
             (expression, e))
 
-    actual = parsed.search(given, options=options)
     expected_repr = json.dumps(expected, indent=4)
     actual_repr = json.dumps(actual, indent=4)
     error_msg = ("\n\n  (%s) The expression '%s' was supposed to give:\n%s\n"
@@ -99,13 +92,11 @@ def test_expression(given, expression, expected, filename):
     _compliance_tests('error')
 )
 def test_error_expression(given, expression, error, filename):
-    import jmespath.parser
     if error not in ('syntax', 'invalid-type',
                      'unknown-function', 'invalid-arity', 'invalid-value'):
         raise RuntimeError("Unknown error type '%s'" % error)
     try:
-        parsed = jmespath.compile(expression)
-        parsed.search(given)
+        (_, parsed) = _search_expression(given, expression, filename)
     except ValueError:
         # Test passes, it raised a parse error as expected.
         pass
@@ -122,3 +113,27 @@ def test_error_expression(given, expression, error, filename):
                          filename, expression, pformat(parsed.parsed)))
         error_msg = error_msg.replace(r'\n', '\n')
         raise AssertionError(error_msg)
+
+def _search_expression(given, expression, filename):
+    import jmespath.parser
+
+    options = LEGACY_OPTIONS \
+        if filename.startswith('legacy') \
+        else COMPLIANCE_OPTIONS
+
+    ## This test suite contains identical expressions
+    ## tested against both a legacy and a JEP-12
+    ## standards-compliant parser.
+
+    ## However, the Parser() class contains a cache
+    ## of compiled expressions for performance purposes
+
+    ## To prevent conflicts between legacy and JEP-12
+    ## standards-compliant evaluation, we need to
+    ## clear the cache here
+
+    jmespath.parser.Parser()._free_cache_entries()
+
+    parsed = jmespath.compile(expression, options=options)
+    actual = parsed.search(given, options=options)
+    return (actual, parsed)
