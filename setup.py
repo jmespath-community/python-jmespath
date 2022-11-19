@@ -7,11 +7,11 @@ from setuptools import setup, find_packages
 
 setup(
     name='jmespath-community',
-    version='1.1.0',
+    version='1.1.0rc2',
     description='JSON Matching Expressions',
     long_description=io.open('README.rst', encoding='utf-8').read(),
-    author='James Saryerwinnie, Springcomp',
-    author_email='js@jamesls.com, springcomp@users.noreply.github.com',
+    author='James Saryerwinnie, Maxime Labelle',
+    author_email='springcomp@users.noreply.github.com',
     url='https://github.com/jmespath-community/jmespath.py',
     scripts=['bin/jp.py'],
     packages=find_packages(exclude=['tests']),
