@@ -1,5 +1,10 @@
 *.py[cod]
 
+# pyvenv
+bin/
+share/
+pyvenv.cfg
+
 # C extensions
 *.so
 
