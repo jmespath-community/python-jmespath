@@ -1,6 +1,8 @@
 import math
 import json
 
+from collections import OrderedDict
+
 from jmespath import exceptions
 from jmespath.compat import get_methods
 from jmespath.compat import iteritems
@@ -532,6 +534,19 @@ class Functions(metaclass=FunctionRegistry):
     @signature({'types': ['array'], 'variadic': True})
     def _func_zip(self, *arguments):
         return list(map(list, zip(*arguments)))
+
+    @signature({'types': ['array']}, {'types': ['expref']})
+    def _func_group_by(self, array, expref):
+        keyfunc = self._create_key_func(expref, ['null', 'string'], 'group_by')
+        if array:
+            result = OrderedDict()
+            keys = list(dict.fromkeys([keyfunc(item) for item in array if keyfunc(item) != None]))
+            for key in keys:
+                items = [ item for item in array if keyfunc(item) == key ]
+                result.update({key: items})
+            return result
+        else:
+            return None
 
     def _create_key_func(self, expref, allowed_types, function_name):
         def keyfunc(x):
