@@ -107,6 +107,18 @@ class TreeInterpreter(Visitor):
         'gte': operator.ge
     }
     _EQUALITY_OPS = ['eq', 'ne']
+    _ARITHMETIC_UNARY_FUNC = {
+        'minus': operator.neg,
+        'plus': lambda x: x
+    }
+    _ARITHMETIC_FUNC = {
+        'div': operator.floordiv,
+        'divide': operator.truediv,
+        'minus': operator.sub,
+        'modulo': operator.mod,
+        'multiply': operator.mul,
+        'plus': operator.add,
+    }
     MAP_TYPE = dict
 
     def __init__(self, options=None):
@@ -129,6 +141,8 @@ class TreeInterpreter(Visitor):
         result = value
         for node in node['children']:
             result = self.visit(node, result)
+            if (result is None):
+                return None
         return result
 
     def visit_field(self, node, value, *args, **kwargs):
@@ -169,6 +183,19 @@ class TreeInterpreter(Visitor):
                     _is_comparable(right)):
                 return None
             return comparator_func(left, right)
+
+    def visit_arithmetic_unary(self, node, value):
+        operation = self._ARITHMETIC_UNARY_FUNC[node['value']]
+        return operation(
+            self.visit(node['children'][0], value)
+        )
+
+    def visit_arithmetic(self, node, value):
+        operation = self._ARITHMETIC_FUNC[node['value']]
+        return operation(
+            self.visit(node['children'][0], value),
+            self.visit(node['children'][1], value)
+        )
 
     def visit_current(self, node, value):
         return value
@@ -234,6 +261,12 @@ class TreeInterpreter(Visitor):
         return result
 
     def visit_slice(self, node, value):
+        if isinstance(value, string_type):
+            start = node['children'][0]
+            end = node['children'][1]
+            step = node['children'][2]
+            return value[start:end:step]
+
         if not isinstance(value, list):
             return None
         s = slice(*node['children'])
@@ -246,16 +279,12 @@ class TreeInterpreter(Visitor):
         return node['value']
 
     def visit_multi_select_dict(self, node, value):
-        if value is None:
-            return None
         collected = self._dict_cls()
         for child in node['children']:
             collected[child['value']] = self.visit(child, value)
         return collected
 
     def visit_multi_select_list(self, node, value):
-        if value is None:
-            return None
         collected = []
         for child in node['children']:
             collected.append(self.visit(child, value))
@@ -289,6 +318,17 @@ class TreeInterpreter(Visitor):
 
     def visit_projection(self, node, value):
         base = self.visit(node['children'][0], value)
+
+        allow_string = False
+        first_child = node['children'][0]
+        if first_child['type'] == 'index_expression':
+            nested_children = first_child['children']
+            if len(nested_children) > 1 and nested_children[1]['type'] == 'slice':
+                allow_string = True
+
+        if isinstance(base, string_type) and allow_string:
+            return base
+
         if not isinstance(base, list):
             return None
         collected = []
