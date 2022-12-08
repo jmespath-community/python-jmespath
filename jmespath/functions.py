@@ -10,7 +10,6 @@ from jmespath.compat import get_methods
 from jmespath.compat import iteritems
 from jmespath.compat import map
 from jmespath.compat import string_type as STRING_TYPE
-from jmespath.compat import get_methods
 
 
 # python types -> jmespath types
@@ -336,8 +335,8 @@ class Functions(metaclass=FunctionRegistry):
         {'type': 'number', 'optional': True},
         {'type': 'number', 'optional': True})
     def _func_find_first(self, text, search, start = 0, end = None):
-        self._ensure_integer('find_first', start, start)
-        self._ensure_integer('find_first', end, end)
+        self._ensure_integer('find_first', 'start', start)
+        self._ensure_integer('find_first', 'end', end)
         return self._find_impl(
             text,
             search,
@@ -352,8 +351,8 @@ class Functions(metaclass=FunctionRegistry):
         {'type': 'number', 'optional': True},
         {'type': 'number', 'optional': True})
     def _func_find_last(self, text, search, start = 0, end = None):
-        self._ensure_integer('find_last', start, start)
-        self._ensure_integer('find_last', end, end)
+        self._ensure_integer('find_last', 'start', start)
+        self._ensure_integer('find_last', 'end', end)
         return self._find_impl(
             text,
             search,
@@ -389,7 +388,7 @@ class Functions(metaclass=FunctionRegistry):
         {'type': 'number'},
         {'type': 'string', 'optional': True})
     def _func_pad_right(self, text, width, padding = ' '):
-        self._ensure_non_negative_integer('pad_left', 'width', width)
+        self._ensure_non_negative_integer('pad_right', 'width', width)
         return self._pad_impl(lambda : text.ljust(width, padding), padding)
 
     def _pad_impl(self, func, padding):
@@ -446,14 +445,10 @@ class Functions(metaclass=FunctionRegistry):
 
         if param_value != None: 
             if int(param_value) != param_value:
-                raise exceptions.JMESPathError(
-                    'invalid-type: {}() expects ${} to be a '
-                    'integer, but received {} instead.'
-                    .format(
-                        func_name,
-                        param_name,
-                        param_value
-                    ))
+                raise exceptions.JMESPathValueError(
+                    func_name,
+                    param_value,
+                    "integer")
 
     def _ensure_non_negative_integer(
         self,
@@ -463,14 +458,10 @@ class Functions(metaclass=FunctionRegistry):
 
         if param_value != None: 
             if int(param_value) != param_value or int(param_value) < 0:
-                raise exceptions.JMESPathError(
-                    'invalid-type: {}() expects ${} to be a '
-                    'non-negative integer, but received {} instead.'
-                    .format(
-                        func_name,
-                        param_name,
-                        param_value
-                    ))
+                raise exceptions.JMESPathValueError(
+                    func_name,
+                    param_name,
+                    "non-negative integer")
 
     @signature({'type': 'string'}, {'type': 'string', 'optional': True})
     def _func_trim(self, text, chars = None):
