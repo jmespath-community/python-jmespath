@@ -1,5 +1,7 @@
 import math
 import json
+import inspect
+from pydoc import resolve
 
 from collections import OrderedDict
 
@@ -73,7 +75,7 @@ class Functions(metaclass=FunctionRegistry):
     FUNCTION_TABLE = {
     }
 
-    def call_function(self, function_name, resolved_args):
+    def call_function(self, function_name, resolved_args, *args, **kwargs):
         try:
             spec = self.FUNCTION_TABLE[function_name]
         except KeyError:
@@ -82,6 +84,13 @@ class Functions(metaclass=FunctionRegistry):
         function = spec['function']
         signature = spec['signature']
         self._validate_arguments(resolved_args, signature, function_name)
+
+        # supply extra arguments only if the function expects them
+
+        parameters = [parameter.name for parameter in inspect.signature(function).parameters.values()]
+        if ('kwargs' in parameters):
+            return function(self, *resolved_args, *args, scopes = kwargs.get('scopes'))
+
         return function(self, *resolved_args)
 
     def _validate_arguments(self, args, signature, function_name):
@@ -530,6 +539,12 @@ class Functions(metaclass=FunctionRegistry):
             return max(array, key=keyfunc)
         else:
             return None
+
+    @signature({'types': ['object']}, {'types': ['expref']})
+    def _func_let(self, scope, expref, *args, **kwargs):
+        if 'scopes' in kwargs:
+            kwargs.get('scopes').pushScope(scope)
+        return expref.visit(expref.expression, expref.context, *args, **kwargs)
 
     @signature({'types': ['array'], 'variadic': True})
     def _func_zip(self, *arguments):

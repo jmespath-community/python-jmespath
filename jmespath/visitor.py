@@ -2,6 +2,7 @@ import operator
 
 from jmespath import functions
 from jmespath.compat import string_type
+from jmespath.compat import with_str_method
 from numbers import Number
 
 
@@ -72,13 +73,13 @@ class Options(object):
 
 
 class _Expression(object):
-    def __init__(self, expression, interpreter):
+    def __init__(self, expression, interpreter, context):
         self.expression = expression
         self.interpreter = interpreter
+        self.context = context
 
     def visit(self, node, *args, **kwargs):
         return self.interpreter.visit(node, *args, **kwargs)
-
 
 class Visitor(object):
     def __init__(self):
@@ -95,7 +96,6 @@ class Visitor(object):
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError("default_visit")
-
 
 class TreeInterpreter(Visitor):
     COMPARATOR_FUNC = {
@@ -145,11 +145,24 @@ class TreeInterpreter(Visitor):
                 return None
         return result
 
-    def visit_field(self, node, value):
+    def visit_field(self, node, value, *args, **kwargs):
+        identifier = node['value']
+        scopes = kwargs.get('scopes')
+
         try:
-            return value.get(node['value'])
+            result = value.get(identifier) 
+            if result == None:
+                result = self._get_from_scopes(
+                    identifier, *args, scopes=scopes)
+            return result
         except AttributeError:
-            return None
+            return self._get_from_scopes(
+                identifier, *args, scopes=scopes)
+
+    def _get_from_scopes(self, identifier, *args, **kwargs):
+        if 'scopes' in kwargs:
+            return kwargs['scopes'].getValue(identifier) 
+        return None
 
     def visit_comparator(self, node, value):
         # Common case: comparator is == or !=
@@ -187,15 +200,20 @@ class TreeInterpreter(Visitor):
     def visit_current(self, node, value):
         return value
 
-    def visit_expref(self, node, value):
-        return _Expression(node['children'][0], self)
+    def visit_root(self, *args, **kwargs):
+        if 'scopes' in kwargs:
+            return kwargs['scopes'].getValue('$')
+        return None
 
-    def visit_function_expression(self, node, value):
+    def visit_expref(self, node, value):
+        return _Expression(node['children'][0], self, value)
+
+    def visit_function_expression(self, node, value, *args, **kwargs):
         resolved_args = []
         for child in node['children']:
             current = self.visit(child, value)
             resolved_args.append(current)
-        return self._functions.call_function(node['value'], resolved_args)
+        return self._functions.call_function(node['value'], resolved_args, scopes = kwargs.get('scopes'))
 
     def visit_filter_projection(self, node, value):
         base = self.visit(node['children'][0], value)
@@ -366,3 +384,45 @@ class GraphvizVisitor(Visitor):
             self._count += 1
             self._lines.append('  %s -> %s' % (current, child_name))
             self._visit(child, child_name)
+
+
+@with_str_method
+class Scopes:
+    def __init__(self):
+        self._scopes = []
+
+    def pushScope(self, scope):
+        self._scopes.append(scope)
+
+    def popScope(self):
+        if len(self._scopes) > 0:
+            self._scopes.pop()
+
+    def getValue(self, identifier):
+        for scope in self._scopes[::-1]:
+            if scope.get(identifier) != None:
+                return scope[identifier]
+        return None
+
+    def __str__(self):
+        return '{}'.format(self._scopes)
+
+
+class ScopedInterpreter(TreeInterpreter):
+    def __init__(self, options = None):
+        super().__init__(options)
+        self._scopes = Scopes()
+
+    def evaluate(self, ast, root_scope):
+        self._scopes.pushScope({'$': root_scope})
+        return self.visit(ast, root_scope)
+
+    def visit(self, node, *args, **kwargs):
+        scoped_types = ['field', 'function_expression', 'root']
+        if (node['type'] in scoped_types):
+            kwargs.update({'scopes': self._scopes})
+        else:
+            if 'scopes' in kwargs:
+                kwargs.pop('scopes')
+
+        return super().visit(node, *args, **kwargs)
