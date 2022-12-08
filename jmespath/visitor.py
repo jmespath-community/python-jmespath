@@ -216,6 +216,12 @@ class TreeInterpreter(Visitor):
         return result
 
     def visit_slice(self, node, value):
+        if isinstance(value, string_type):
+            start = node['children'][0]
+            end = node['children'][1]
+            step = node['children'][2]
+            return value[start:end:step]
+
         if not isinstance(value, list):
             return None
         s = slice(*node['children'])
@@ -271,6 +277,17 @@ class TreeInterpreter(Visitor):
 
     def visit_projection(self, node, value):
         base = self.visit(node['children'][0], value)
+
+        allow_string = False
+        first_child = node['children'][0]
+        if first_child['type'] == 'index_expression':
+            nested_children = first_child['children']
+            if len(nested_children) > 1 and nested_children[1]['type'] == 'slice':
+                allow_string = True
+
+        if isinstance(base, string_type) and allow_string:
+            return base
+
         if not isinstance(base, list):
             return None
         collected = []
