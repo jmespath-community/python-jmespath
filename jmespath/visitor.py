@@ -96,11 +96,20 @@ class Visitor(object):
 
     def visit(self, node, *args, **kwargs):
         node_type = node['type']
+
+        scoped_types = ['field', 'function_expression', 'root']
+        if (node['type'] in scoped_types):
+            kwargs.update({'scopes': self._scope})
+        else:
+            if 'scopes' in kwargs:
+                kwargs.pop('scopes')
+
         method = self._method_cache.get(node_type)
         if method is None:
             method = getattr(
                 self, 'visit_%s' % node['type'], self.default_visit)
             self._method_cache[node_type] = method
+
         return method(node, *args, **kwargs)
 
     def default_visit(self, node, *args, **kwargs):
@@ -142,6 +151,16 @@ class TreeInterpreter(Visitor):
             self._functions = self._options.custom_functions
         else:
             self._functions = functions.Functions()
+        self._scope = None
+
+    def withScope(self, scope):
+        interpreter = TreeInterpreter(self._options)
+        interpreter._scope = self._scope.withScope(scope)
+        return interpreter
+
+    def evaluate(self, ast, root_scope):
+        self._scope = Scope({'$': root_scope})
+        return self.visit(ast, root_scope)
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError(node['type'])
@@ -222,7 +241,7 @@ class TreeInterpreter(Visitor):
         for child in node['children']:
             current = self.visit(child, value)
             resolved_args.append(current)
-        return self._functions.call_function(node['value'], resolved_args, scopes = kwargs.get('scopes'))
+        return self._functions.call_function(node['value'], resolved_args)
 
     def visit_filter_projection(self, node, value):
         base = self.visit(node['children'][0], value)
@@ -396,42 +415,25 @@ class GraphvizVisitor(Visitor):
 
 
 @with_str_method
-class Scopes:
-    def __init__(self):
-        self._scopes = []
+class Scope:
+    def __init__(self, scope):
+        self._inner = None
+        self._data = scope
 
-    def pushScope(self, scope):
-        self._scopes.append(scope)
-
-    def popScope(self):
-        if len(self._scopes) > 0:
-            self._scopes.pop()
+    def withScope(self, data):
+        scope = Scope(data)
+        scope._inner = self
+        return scope
 
     def getValue(self, identifier):
-        for scope in self._scopes[::-1]:
-            if scope.get(identifier) != None:
-                return scope[identifier]
+        if self._data != None:
+            if identifier in self._data:
+                value = self._data[identifier]
+                if value != None:
+                    return value
+        if self._inner != None:
+            return self._inner.getValue(identifier)
         return None
 
     def __str__(self):
-        return '{}'.format(self._scopes)
-
-
-class ScopedInterpreter(TreeInterpreter):
-    def __init__(self, options = None):
-        super().__init__(options)
-        self._scopes = Scopes()
-
-    def evaluate(self, ast, root_scope):
-        self._scopes.pushScope({'$': root_scope})
-        return self.visit(ast, root_scope)
-
-    def visit(self, node, *args, **kwargs):
-        scoped_types = ['field', 'function_expression', 'root']
-        if (node['type'] in scoped_types):
-            kwargs.update({'scopes': self._scopes})
-        else:
-            if 'scopes' in kwargs:
-                kwargs.pop('scopes')
-
-        return super().visit(node, *args, **kwargs)
+        return 'data: {}, inner: {}'.format(self._data, self._inner)
