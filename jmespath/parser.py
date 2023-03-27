@@ -585,7 +585,7 @@ class ParsedResult(object):
         self.parsed = parsed
 
     def search(self, value, options=None):
-        evaluator = visitor.ScopedInterpreter(options)
+        evaluator = visitor.TreeInterpreter(options)
         return evaluator.evaluate(self.parsed, value)
 
     def _render_dot_file(self):
