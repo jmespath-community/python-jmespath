@@ -211,7 +211,7 @@ class TreeInterpreter(Visitor):
 
     def visit_root(self, *args, **kwargs):
         if 'scopes' in kwargs:
-            return kwargs['scopes'].getValue('$')
+            return kwargs['scopes'].getRoot()
         return None
 
     def visit_expref(self, node, value):
@@ -397,8 +397,9 @@ class GraphvizVisitor(Visitor):
 
 @with_str_method
 class Scopes:
-    def __init__(self):
+    def __init__(self, root):
         self._scopes = []
+        self._root = root
 
     def pushScope(self, scope):
         self._scopes.append(scope)
@@ -413,6 +414,9 @@ class Scopes:
                 return scope[identifier]
         return None
 
+    def getRoot(self):
+        return self._root
+
     def __str__(self):
         return '{}'.format(self._scopes)
 
@@ -420,10 +424,9 @@ class Scopes:
 class ScopedInterpreter(TreeInterpreter):
     def __init__(self, options = None):
         super().__init__(options)
-        self._scopes = Scopes()
 
     def evaluate(self, ast, root_scope):
-        self._scopes.pushScope({'$': root_scope})
+        self._scopes = Scopes(root_scope)
         return self.visit(ast, root_scope)
 
     def visit(self, node, *args, **kwargs):
