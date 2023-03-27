@@ -92,7 +92,6 @@ class TestParser(unittest.TestCase):
         for sign in operations:
             operation = operations[sign]
             expression = 'foo {} bar'.format(sign)
-            print(expression)
             self.assert_parsed_ast(
                 expression,
                 ast.arithmetic(
@@ -110,7 +109,6 @@ class TestParser(unittest.TestCase):
         for sign in operations:
             operation = operations[sign]
             expression = '{} foo'.format(sign)
-            print(expression)
             self.assert_parsed_ast(
                 expression,
                 ast.arithmetic_unary(

@@ -18,7 +18,6 @@ class Lexer(object):
         ',': 'comma',
         ':': 'colon',
         '@': 'current',
-        '$': 'root',
         '(': 'lparen',
         ')': 'rparen',
         '{': 'lbrace',
@@ -117,7 +116,13 @@ class Lexer(object):
             elif self._current == '=':
                 yield self._match_or_else('=', 'eq', 'assign')
             elif self._current == '$':
-                yield self._consume_variable()
+                if self._peek_may_be_valid_unquoted_identifier():
+                    yield self._consume_variable()
+                else:
+                    yield {'type': 'root',
+                           'value': self._current,
+                           'start': self._position, 'end': self._position + 1}
+                    self._next()
             else:
                 raise LexerError(lexer_position=self._position,
                                  lexer_value=self._current,
@@ -146,6 +151,13 @@ class Lexer(object):
             buff += self._current
         return {'type': 'variable', 'value': buff,
                 'start': start, 'end': start + len(buff)}
+
+    def _peek_may_be_valid_unquoted_identifier(self):
+        if (self._position == self._length - 1):
+            return False
+        else:
+            next = self._chars[self._position + 1]
+            return next in self.START_IDENTIFIER
 
     def _peek_is_next_digit(self):
         if (self._position == self._length - 1):
