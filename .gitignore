@@ -4,6 +4,7 @@
 bin/
 share/
 pyvenv.cfg
+.venv/
 
 # C extensions
 *.so
