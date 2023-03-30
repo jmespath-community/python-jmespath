@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+"""Run tests."""
+from subprocess import check_call
+
+def main():
+    check_call('cd tests && py.test --cov jmespath --cov-report term-missing', shell=True)
+
+
+if __name__ == '__main__':
+    main()

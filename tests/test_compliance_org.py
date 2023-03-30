@@ -1,3 +1,7 @@
+## JMESPATH.ORG COMPLIANCE
+## run the following command to extract jmespath.org compliance test suite
+## git clone https://github.com/jmespath/jmespath.test tests/jmespath.org
+
 import os
 from pprint import pformat
 from tests import OrderedDict
@@ -7,14 +11,13 @@ import pytest
 
 from jmespath.visitor import Options
 
-
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-COMPLIANCE_DIR = os.path.join(TEST_DIR, 'compliance')
-LEGACY_DIR = os.path.join(TEST_DIR, 'legacy')
-NOT_SPECIFIED = object()
-COMPLIANCE_OPTIONS = Options(dict_cls=OrderedDict)
+JMESPATH_ORG_DIR = os.path.join(TEST_DIR, 'jmespath.org')
 LEGACY_OPTIONS = Options(dict_cls=OrderedDict, enable_legacy_literals=True)
 
+ExcludedTests = [
+    "literal.json"
+]
 
 def _compliance_tests(requested_test_type):
     for full_path in _walk_files():
@@ -31,22 +34,19 @@ def _compliance_tests(requested_test_type):
                     yield (given, t['expression'],
                            t['error'], os.path.basename(full_path))
 
+def _is_valid_test_file(filename):
+    if filename.endswith(".json") and \
+        not filename.endswith("schema.json") and \
+            not os.path.basename(filename) in ExcludedTests:
+                return True
+    return False
 
 def _walk_files():
-    # Check for a shortcut when running the tests interactively.
-    # If a JMESPATH_TEST is defined, that file is used as the
-    # only test to run.  Useful when doing feature development.
-    single_file = os.environ.get('JMESPATH_TEST')
-    if single_file is not None:
-        yield os.path.abspath(single_file)
-    else:
-        for dir in [COMPLIANCE_DIR, LEGACY_DIR]:
-            for root, dirnames, filenames in os.walk(dir):
-                for filename in filenames:
-                    if filename.endswith(".json") and not filename.endswith("schema.json"):
-                        print(filename)
-                        yield os.path.join(root, filename)
-
+    for dir in [JMESPATH_ORG_DIR]:
+        for root, dirnames, filenames in os.walk(dir):
+            for filename in filenames:
+                if _is_valid_test_file(filename):
+                    yield os.path.join(root, filename)
 
 def load_cases(full_path):
     all_test_data = json.load(open(full_path), object_pairs_hook=OrderedDict)
@@ -92,9 +92,8 @@ def test_expression(given, expression, expected, filename):
     _compliance_tests('error')
 )
 def test_error_expression(given, expression, error, filename):
-    if error not in ('invalid-arity', 'invalid-type',
-                'invalid-value', 'not-a-number', 'syntax',
-                'unknown-function'):
+    if error not in ('syntax', 'invalid-type',
+                     'unknown-function', 'invalid-arity', 'invalid-value'):
         raise RuntimeError("Unknown error type '%s'" % error)
     try:
         (_, parsed) = _search_expression(given, expression, filename)
@@ -118,22 +117,7 @@ def test_error_expression(given, expression, error, filename):
 def _search_expression(given, expression, filename):
     import jmespath.parser
 
-    options = LEGACY_OPTIONS \
-        if filename.startswith('legacy') \
-        else COMPLIANCE_OPTIONS
-
-    ## This test suite contains identical expressions
-    ## tested against both a legacy and a JEP-12
-    ## standards-compliant parser.
-
-    ## However, the Parser() class contains a cache
-    ## of compiled expressions for performance purposes
-
-    ## To prevent conflicts between legacy and JEP-12
-    ## standards-compliant evaluation, we need to
-    ## clear the cache here
-
-    jmespath.parser.Parser()._free_cache_entries()
+    options = LEGACY_OPTIONS
 
     parsed = jmespath.compile(expression, options=options)
     actual = parsed.search(given, options=options)

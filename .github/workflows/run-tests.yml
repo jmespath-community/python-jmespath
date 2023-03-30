@@ -28,4 +28,4 @@ jobs:
     - name: Test with pytest
       run: |
         ./scripts/sync-tests
-        cd tests/ && py.test --cov jmespath --cov-report term-missing
+        ./scripts/run-tests
