@@ -1,4 +1,4 @@
-1.1.0
+1.1.1
 =====
 
 * JEP-11 Lexical Scoping
