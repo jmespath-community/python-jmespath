@@ -1,8 +1,9 @@
 import operator
 
+from jmespath import exceptions
 from jmespath import functions
 from jmespath.compat import string_type
-from jmespath.compat import with_str_method
+from jmespath.scope import ScopedChainDict
 from numbers import Number
 
 
@@ -82,10 +83,9 @@ class Options(object):
 
 
 class _Expression(object):
-    def __init__(self, expression, interpreter, context):
+    def __init__(self, expression, interpreter):
         self.expression = expression
         self.interpreter = interpreter
-        self.context = context
 
     def visit(self, node, *args, **kwargs):
         return self.interpreter.visit(node, *args, **kwargs)
@@ -142,9 +142,15 @@ class TreeInterpreter(Visitor):
             self._functions = self._options.custom_functions
         else:
             self._functions = functions.Functions()
+        self._root = None
+        self._scope = ScopedChainDict()
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError(node['type'])
+
+    def evaluate(self, ast, root):
+        self._root = root
+        return self.visit(ast, root)
 
     def visit_subexpression(self, node, value):
         result = value
@@ -155,23 +161,10 @@ class TreeInterpreter(Visitor):
         return result
 
     def visit_field(self, node, value, *args, **kwargs):
-        identifier = node['value']
-        scopes = kwargs.get('scopes')
-
         try:
-            result = value.get(identifier) 
-            if result == None:
-                result = self._get_from_scopes(
-                    identifier, *args, scopes=scopes)
-            return result
+           return value.get(node['value']) 
         except AttributeError:
-            return self._get_from_scopes(
-                identifier, *args, scopes=scopes)
-
-    def _get_from_scopes(self, identifier, *args, **kwargs):
-        if 'scopes' in kwargs:
-            return kwargs['scopes'].getValue(identifier) 
-        return None
+            return None
 
     def visit_comparator(self, node, value):
         # Common case: comparator is == or !=
@@ -209,13 +202,11 @@ class TreeInterpreter(Visitor):
     def visit_current(self, node, value):
         return value
 
-    def visit_root(self, *args, **kwargs):
-        if 'scopes' in kwargs:
-            return kwargs['scopes'].getRoot()
-        return None
+    def visit_root(self, node, value):
+        return self._root
 
     def visit_expref(self, node, value):
-        return _Expression(node['children'][0], self, value)
+        return _Expression(node['children'][0], self)
 
     def visit_function_expression(self, node, value, *args, **kwargs):
         resolved_args = []
@@ -347,6 +338,27 @@ class TreeInterpreter(Visitor):
                 collected.append(current)
         return collected
 
+    def visit_let_expression(self, node, value):
+        *bindings, expr = node['children']
+        scope = {}
+        for assign in bindings:
+            scope.update(self.visit(assign, value))
+        self._scope.push_scope(scope)
+        result = self.visit(expr, value)
+        self._scope.pop_scope()
+        return result
+
+    def visit_assign(self, node, value):
+        name = node['value']
+        value = self.visit(node['children'][0], value)
+        return {name: value}
+
+    def visit_variable_ref(self, node, value):
+        try:
+            return self._scope[node['value']]
+        except KeyError:
+            raise exceptions.UndefinedVariable(node['value'])
+
     def visit_value_projection(self, node, value):
         base = self.visit(node['children'][0], value)
         try:
@@ -393,48 +405,3 @@ class GraphvizVisitor(Visitor):
             self._count += 1
             self._lines.append('  %s -> %s' % (current, child_name))
             self._visit(child, child_name)
-
-
-@with_str_method
-class Scopes:
-    def __init__(self, root):
-        self._scopes = []
-        self._root = root
-
-    def pushScope(self, scope):
-        self._scopes.append(scope)
-
-    def popScope(self):
-        if len(self._scopes) > 0:
-            self._scopes.pop()
-
-    def getValue(self, identifier):
-        for scope in self._scopes[::-1]:
-            if scope.get(identifier) != None:
-                return scope[identifier]
-        return None
-
-    def getRoot(self):
-        return self._root
-
-    def __str__(self):
-        return '{}'.format(self._scopes)
-
-
-class ScopedInterpreter(TreeInterpreter):
-    def __init__(self, options = None):
-        super().__init__(options)
-
-    def evaluate(self, ast, root_scope):
-        self._scopes = Scopes(root_scope)
-        return self.visit(ast, root_scope)
-
-    def visit(self, node, *args, **kwargs):
-        scoped_types = ['field', 'function_expression', 'root']
-        if (node['type'] in scoped_types):
-            kwargs.update({'scopes': self._scopes})
-        else:
-            if 'scopes' in kwargs:
-                kwargs.pop('scopes')
-
-        return super().visit(node, *args, **kwargs)

@@ -85,12 +85,6 @@ class Functions(metaclass=FunctionRegistry):
         signature = spec['signature']
         self._validate_arguments(resolved_args, signature, function_name)
 
-        # supply extra arguments only if the function expects them
-
-        parameters = [parameter.name for parameter in inspect.signature(function).parameters.values()]
-        if ('kwargs' in parameters):
-            return function(self, *resolved_args, *args, scopes = kwargs.get('scopes'))
-
         return function(self, *resolved_args)
 
     def _validate_arguments(self, args, signature, function_name):
@@ -539,12 +533,6 @@ class Functions(metaclass=FunctionRegistry):
             return max(array, key=keyfunc)
         else:
             return None
-
-    @signature({'types': ['object']}, {'types': ['expref']})
-    def _func_let(self, scope, expref, *args, **kwargs):
-        if 'scopes' in kwargs:
-            kwargs.get('scopes').pushScope(scope)
-        return expref.visit(expref.expression, expref.context, *args, **kwargs)
 
     @signature({'types': ['array'], 'variadic': True})
     def _func_zip(self, *arguments):

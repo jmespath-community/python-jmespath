@@ -92,9 +92,9 @@ def test_expression(given, expression, expected, filename):
     _compliance_tests('error')
 )
 def test_error_expression(given, expression, error, filename):
-    if error not in ('invalid-arity', 'invalid-type',
-                'invalid-value', 'not-a-number', 'syntax',
-                'unknown-function'):
+    import jmespath.parser
+    if error not in ('syntax', 'invalid-type', 'undefined-variable',
+                     'unknown-function', 'invalid-arity', 'invalid-value'):
         raise RuntimeError("Unknown error type '%s'" % error)
     try:
         (_, parsed) = _search_expression(given, expression, filename)

@@ -210,6 +210,17 @@ class TestRegexLexer(LexerUtils):
             ]
         )
 
+    def test_variable(self):
+        tokens = list(self.lexer.tokenize('$foo'))
+        self.assertEqual(
+            tokens,
+            [{'type': 'variable', 'value': '$foo',
+              'start': 0, 'end': 4},
+            {'type': 'eof', 'value': '',
+                'start': 4, 'end': 4}
+              ]
+        )
+
     def test_unknown_character(self):
         with self.assertRaises(LexerError) as e:
             tokens = list(self.lexer.tokenize('foo[0^]'))
