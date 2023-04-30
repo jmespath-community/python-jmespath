@@ -327,7 +327,9 @@ class TreeInterpreter(Visitor):
                 allow_string = True
 
         if isinstance(base, string_type) and allow_string:
-            return base
+            ## projections are really sub-expressions in disguise
+            ## evaluate the rhs when lhs is a sliced string
+            return self.visit(node['children'][1], base)
 
         if not isinstance(base, list):
             return None
