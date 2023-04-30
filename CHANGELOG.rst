@@ -1,4 +1,13 @@
+1.1.2
+=====
+* Fix unevaluated projection after a string slice
+  (`issue #22 <https://github.com/jmespath-community/python-jmespath/issues/22>`__)
+
 1.1.1
+=====
+* JEP-11a Lexical Scoping deprecates the let function.
+
+1.1.0
 =====
 
 * JEP-11 Lexical Scoping
