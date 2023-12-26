@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='jmespath-community',
-    version='1.1.2',
+    version='1.1.3',
     description='JSON Matching Expressions',
     long_description=io.open('README.rst', encoding='utf-8').read(),
     author='James Saryerwinnie, Springcomp',
