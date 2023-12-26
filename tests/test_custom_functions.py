@@ -9,7 +9,6 @@ class CustomFunctions(functions.Functions):
     def _func_length0(self, s):
         return 0 if s is None else len(s)
 
-
 class TestCustomFunctions(unittest.TestCase):
     def setUp(self):
         self.options = jmespath.Options(custom_functions=CustomFunctions())
