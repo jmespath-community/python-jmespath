@@ -88,9 +88,14 @@ class Functions(metaclass=FunctionRegistry):
         return function(self, *resolved_args)
 
     def _validate_arguments(self, args, signature, function_name):
-        required_arguments_count = len([param for param in signature if not param.get('optional') or not param['optional']])
-        optional_arguments_count = len([param for param in signature if param.get('optional') and param['optional']])
+
+        if len(signature) == 0:
+            return self._type_check(args, signature, function_name)
+
+        required_arguments_count = len([param for param in signature if param and (not param.get('optional') or not param['optional'])])
+        optional_arguments_count = len([param for param in signature if param and param.get('optional') and param['optional']])
         has_variadic = signature[-1].get('variadic') if signature != None else False
+        
         if has_variadic:
             if len(args) < len(signature):
                 raise exceptions.VariadictArityError(

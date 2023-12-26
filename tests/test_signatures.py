@@ -40,6 +40,14 @@ class TestFunctionSignatures(unittest.TestCase):
 			self._functions._validate_arguments(['string'], signature, function_name)
 		)
 
+	def test_signature_with_empty_argument(self):
+		(function_name, signature) = self._make_test("_function_with_empty_argument")
+		self._functions._validate_arguments([], signature, function_name)
+
+	def test_signature_with_no_arguments(self):
+		(function_name, signature) = self._make_test("_function_with_no_arguments")
+		self._functions._validate_arguments([], signature, function_name)
+
 	def _make_test(self, funcName):
 		for name, method in compat.get_methods(TestFunctionSignatures):
 			print(name)
@@ -64,6 +72,13 @@ class TestFunctionSignatures(unittest.TestCase):
 	def _function_with_optional_arguments(self, arg1, opt1, opt2):
 		return None
 
+	@functions.signature({})
+	def _function_with_empty_argument(self):
+		return None
+
+	@functions.signature()
+	def _function_with_no_arguments(self):
+		return None
 
 if __name__ == '__main__':
     unittest.main()
