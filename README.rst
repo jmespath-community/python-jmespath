@@ -244,6 +244,21 @@ there is a ``tests/compliance`` directory that contains
 to verify they are producing the correct output.  Each json
 file is grouped by feature.
 
+Contributing
+============
+
+Clone this repository and run the following commands:
+
+.. code:: sh
+
+    python -m venv .venv/
+    source .venv/bin/activate
+    pip install -r requirements.txt
+
+    git submodule update --init --checkout --recursive --force
+    ./scripts/sync-tests
+
+    ./scripts/run-tests
 
 Discuss
 =======
