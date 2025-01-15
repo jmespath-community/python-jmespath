@@ -24,6 +24,7 @@ class Lexer(object):
         '}': 'rbrace',
         '+': 'plus',
         '%': 'modulo',
+        '?': 'question',
         u'\u2212': 'minus',
         u'\u00d7': 'multiply',
         u'\u00f7': 'divide',
