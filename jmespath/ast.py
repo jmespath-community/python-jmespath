@@ -112,3 +112,7 @@ def value_projection(left, right):
 
 def variable_ref(name):
     return {"type": "variable_ref", "children": [], "value": name}
+
+
+def ternary_operator(condition, left, right):
+    return {"type": "ternary_operator", "children": [condition, left, right]}

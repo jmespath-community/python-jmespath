@@ -53,8 +53,9 @@ class Parser(object):
         'expref': 0,
         'colon': 0,
         'pipe': 1,
-        'or': 2,
-        'and': 3,
+        'question': 2,
+        'or': 3,
+        'and': 4,
         'eq': 5,
         'gt': 5,
         'lt': 5,
@@ -413,6 +414,12 @@ class Parser(object):
             self._match('rbracket')
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
             return ast.projection(left, right)
+    
+    def _token_led_question(self, condition):
+        left = self._expression()
+        self._match('colon')
+        right = self._expression()
+        return ast.ternary_operator(condition, left, right)
 
     def _project_if_slice(self, left, right):
         index_expr = ast.index_expression([left, right])
