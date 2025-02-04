@@ -2,3 +2,6 @@
 	path = jmespath.test
 	url = https://github.com/jmespath-community/jmespath.test.git
 	branch = main
+[submodule "tests/jmespath.org"]
+	path = tests/jmespath.org
+	url = http://github.com/jmespath/jmespath.test.git
