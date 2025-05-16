@@ -1,0 +1,66 @@
+[
+	{
+		"given": {
+			"true": true,
+			"false": false,
+			"foo": "foo",
+			"bar": "bar",
+			"baz": "baz",
+			"qux": "qux",
+			"quux": "quux",
+			"two": 2,
+			"fourty": 40
+		},
+		"cases": [
+			{
+				"expression": "true ? foo : bar",
+				"result": "foo"
+			},
+			{
+				"expression": "false ? foo : bar",
+				"result": "bar"
+			},
+			{
+				"expression": "`null` ? foo : bar",
+				"result": "bar"
+			},
+			{
+				"expression": "`[]` ? foo : bar",
+				"result": "bar"
+			},
+			{
+				"expression": "`{}` ? foo : bar",
+				"result": "bar"
+			},
+			{
+				"expression": "'' ? foo : bar",
+				"result": "bar"
+			},
+			{
+				"comment": "chained ternaries",
+				"expression": "foo ? bar ? baz : qux : quux",
+				"result": "baz"
+			},
+			{
+				"comment": "precedence with pipes",
+				"expression": "false ? foo | bar | @ : baz",
+				"result": "baz"
+			},
+			{
+				"comment": "precedence with arithmetics",
+				"expression": "foo ? fourty + two : `false`",
+				"result": 42
+			},
+			{
+				"comment": "precedence with logical operators",
+				"expression": "true || false ? foo : bar",
+				"result": "foo"
+			},
+			{
+				"comment": "precedence with logical operators",
+				"expression": "true && false ? foo : bar",
+				"result": "bar"
+			}
+		]
+	}
+]
