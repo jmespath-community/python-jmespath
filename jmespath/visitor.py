@@ -361,6 +361,17 @@ class TreeInterpreter(Visitor):
         except KeyError:
             raise exceptions.UndefinedVariable(node['value'])
 
+    def visit_ternary_operator(self, node, value):
+        condition = node['children'][0]
+        evaluation = self.visit(condition, value)
+
+        if self._is_false(evaluation):
+            falsyNode = node['children'][2]
+            return self.visit(falsyNode, value)
+        else:
+            truthyNode = node['children'][1]
+            return self.visit(truthyNode, value)
+
     def visit_value_projection(self, node, value):
         base = self.visit(node['children'][0], value)
         try:
