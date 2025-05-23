@@ -142,7 +142,8 @@ class TestParser(unittest.TestCase):
 
     def test_multiselect_with_all_quoted_keys(self):
         parsed = self.parser.parse('foo.{"bar": bar.baz, "qux": qux}')
-        result = parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}})
+        result = parsed.search(
+            {'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}})
         self.assertEqual(result, {"bar": "CORRECT", "qux": "qux"})
 
     def test_function_call_with_and_statement(self):
@@ -164,6 +165,38 @@ class TestParser(unittest.TestCase):
                     {'type': 'index', 'value': 0, 'children': []}
                 ]
             })
+
+    def test_index_expression_index(self):
+        self.assert_parsed_ast(
+            '[0]',
+            {
+                'type': 'index_expression',
+                'children': [
+                    {'type': 'identity', 'children': []},
+                    {'type': 'index', 'value': 0, 'children': []}
+                ]
+            })
+
+    def test_index_expression_compound_index(self):
+        self.assert_parsed_ast(
+            'foo[0]',
+            {
+                'type': 'index_expression',
+                'children': [
+                    {'type': 'field', 'value': 'foo', 'children': []},
+                    {'type': 'index', 'value': 0, 'children': []}
+                ]
+            })
+
+    def test_index_expression_flatten(self):
+        self.assert_parsed_ast(
+            '[]',
+            {'type': 'index_expression',
+             'children':   [
+                 {'type': 'identity', 'children': []},
+                 {'type': 'flatten', 'children': []}
+             ]
+             })
 
 
 class TestErrorMessages(unittest.TestCase):
@@ -352,6 +385,7 @@ class TestMergedLists(unittest.TestCase):
              ["five", "six"], ["seven", "eight"],
              ["nine"], ["ten"]])
 
+
 class TestTernaryOperatorExpressions(unittest.TestCase):
     def setUp(self):
         self.parser = parser.Parser()
@@ -412,6 +446,7 @@ class TestParserCaching(unittest.TestCase):
             ''.join(random.choice(string.ascii_letters) for _ in range(3))
             for _ in range(2000)
         ]
+
         def worker():
             p = parser.Parser()
             for expression in expressions:
